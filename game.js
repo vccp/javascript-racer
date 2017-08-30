@@ -4,9 +4,10 @@ NIGEL EDIT
 
 Made canvas responsive in common.css
 Set totalcars to 0
-Autodrive with keyFaster set to true, comment out keys to accelerate and change if condition to allowing for braking
-
-
+Car auto drives with keyFaster set to true, comment out keys to accelerate and change if condition to allowing for braking
+Lanes to 2
+Set player position by setting playerX to -.5 to be in left lane
+segmentLength = 120, so top speed is 70 mph which is the dual carriageway limit. This is connected to the fps i.e. 60
 
 
 
@@ -34,15 +35,15 @@ var background     = null;                    // our background image (loaded be
 var sprites        = null;                    // our spritesheet (loaded below)
 var resolution     = null;                    // scaling factor to provide resolution independence (computed)
 var roadWidth      = 2000;                    // actually half the roads width, easier math if the road spans from -roadWidth to +roadWidth
-var segmentLength  = 200;                     // length of a single segment
+var segmentLength  = 120;                     // length of a single segment
 var rumbleLength   = 3;                       // number of segments per red/white rumble strip
 var trackLength    = null;                    // z length of entire track (computed)
-var lanes          = 3;                       // number of lanes
+var lanes          = 2;                       // number of lanes
 var fieldOfView    = 100;                     // angle (degrees) for field of view
 var cameraHeight   = 1000;                    // z height of camera
 var cameraDepth    = null;                    // z distance camera is from screen (computed)
 var drawDistance   = 300;                     // number of segments to draw
-var playerX        = 0;                       // player x offset from center of road (-1 to 1 to stay independent of roadWidth)
+var playerX        = -0.5;                       // player x offset from center of road (-1 to 1 to stay independent of roadWidth)
 var playerZ        = null;                    // player relative z distance from camera (computed)
 var fogDensity     = 5;                       // exponential fog density
 var position       = 0;                       // current camera Z position (add playerZ to get player's absolute Z position)
@@ -53,9 +54,11 @@ var breaking       = -maxSpeed;               // deceleration rate when braking
 var decel          = -maxSpeed/5;             // 'natural' deceleration rate when neither accelerating, nor braking
 var offRoadDecel   = -maxSpeed/2;             // off road deceleration is somewhere in between
 var offRoadLimit   =  maxSpeed/4;             // limit when off road deceleration no longer applies (e.g. you can always go at least this speed even when off road)
-var totalCars      = 0;                     // total number of cars on the road
+var totalCars      = 100;                       // total number of cars on the road
+
 var currentLapTime = 0;                       // current lap time
 var lastLapTime    = null;                    // last lap time
+var points = 0;                               // points
 
 var keyLeft        = false;
 var keyRight       = false;
@@ -66,7 +69,8 @@ var hud = {
   speed:            { value: null, dom: Dom.get('speed_value')            },
   current_lap_time: { value: null, dom: Dom.get('current_lap_time_value') },
   last_lap_time:    { value: null, dom: Dom.get('last_lap_time_value')    },
-  fast_lap_time:    { value: null, dom: Dom.get('fast_lap_time_value')    }
+  fast_lap_time:    { value: null, dom: Dom.get('fast_lap_time_value')    },
+  points:           { value: null, dom: Dom.get('points_value')    }
 }
 
 //=========================================================================
@@ -113,17 +117,28 @@ function update(dt) {
     if (speed > offRoadLimit)
       speed = Util.accelerate(speed, offRoadDecel, dt);
 
-    // NIGEL EIDT - Sprite collision(trees, rocks etc)
-    
-    // for(n = 0 ; n < playerSegment.sprites.length ; n++) {
-    //   sprite  = playerSegment.sprites[n];
-    //   spriteW = sprite.source.w * SPRITES.SCALE;
-    //   if (Util.overlap(playerX, playerW, sprite.offset + spriteW/2 * (sprite.offset > 0 ? 1 : -1), spriteW)) {
-    //     speed = maxSpeed/5;
-    //     position = Util.increase(playerSegment.p1.world.z, -playerZ, trackLength); // stop in front of sprite (at front of segment)
-    //     break;
-    //   }
-    // }
+    // NIGEL EDIT - Sprite collision(trees, rocks etc)
+
+    for(n = 0 ; n < playerSegment.sprites.length ; n++) {
+      sprite  = playerSegment.sprites[n];
+      spriteW = sprite.source.w * SPRITES.SCALE;
+      if (Util.overlap(playerX, playerW, sprite.offset + spriteW/2 * (sprite.offset > 0 ? 1 : -1), spriteW)) {
+        speed = maxSpeed/5;
+        position = Util.increase(playerSegment.p1.world.z, -playerZ, trackLength); // stop in front of sprite (at front of segment)
+
+        points = points - 100; // Set points in local var
+        updateHud('points', points); // Set point on HUD
+
+        break;
+      }
+    }
+
+    // NIGEL EDIT - points tracking
+    // Util.toFloat(Dom.storage.points // Get points from storage
+    // Dom.storage.points = VALUE; // Set points in storage
+    // points = VALUE; // Set points in local var
+    // updateHud('points', VALUE); // Set point on HUD
+
   }
   
   // NIGEL EIDT - Car collision
